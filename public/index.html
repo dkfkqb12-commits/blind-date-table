@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#ff7a9a">
+<title>블라인드 테이블 · 얼굴 없는 소개팅</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<!-- ENTRY -->
+<section id="entry" class="screen active">
+  <header class="brand">
+    <div class="logo">🫣</div>
+    <h1>블라인드 테이블</h1>
+    <p>얼굴은 비밀, 대화는 진짜.<br>약속한 장소와 테이블에서 캐릭터로 만나요.</p>
+  </header>
+
+  <div class="card">
+    <label class="lbl">닉네임</label>
+    <input id="nick" maxlength="12" placeholder="예: 커피좋아" autocomplete="off">
+
+    <label class="lbl">장소</label>
+    <div id="venues" class="venues"></div>
+
+    <label class="lbl">테이블 번호 <span class="hint">상대와 같은 번호로 맞춰주세요</span></label>
+    <div class="row">
+      <button class="step" data-d="-1" type="button">−</button>
+      <input id="table" type="number" inputmode="numeric" min="1" max="20" value="1">
+      <button class="step" data-d="1" type="button">+</button>
+      <span id="occ" class="occ"></span>
+    </div>
+
+    <label class="lbl">약속 시간 <span class="hint">선택 · 화면에 표시돼요</span></label>
+    <input id="when" type="datetime-local">
+  </div>
+
+  <div class="card">
+    <label class="lbl">내 캐릭터</label>
+    <div class="avatar-edit">
+      <canvas id="editPreview" width="220" height="220"></canvas>
+      <div class="opts">
+        <div id="styleOpts" class="chips"></div>
+        <div id="skinOpts" class="swatches"></div>
+        <div id="outfitOpts" class="swatches"></div>
+      </div>
+    </div>
+  </div>
+
+  <button id="enterBtn" class="primary">카메라 켜고 입장하기</button>
+  <p class="privacy">🔒 카메라 영상은 이 폰 안에서만 쓰여요. 상대에게는 표정·고개 움직임 숫자만 전송되고, 목소리만 그대로 전달돼요.</p>
+  <p id="entryMsg" class="msg"></p>
+</section>
+
+<!-- ROOM -->
+<section id="room" class="screen">
+  <canvas id="scene"></canvas>
+  <div class="topbar">
+    <div id="roomTitle" class="pill"></div>
+    <div id="roomWhen" class="pill small"></div>
+  </div>
+  <div id="partnerTag" class="partner-tag"></div>
+  <div id="waiting" class="waiting">상대를 기다리는 중이에요…<br><small>같은 장소 · 같은 테이블 번호로 들어오면 연결돼요</small></div>
+  <div class="selfbox">
+    <canvas id="selfPreview" width="240" height="240"></canvas>
+    <div id="trackState" class="track">얼굴 인식 준비 중</div>
+  </div>
+  <div id="peerLiked" class="toast"></div>
+  <div class="controls">
+    <button id="micBtn" class="ctl" title="마이크">🎤</button>
+    <button id="likeBtn" class="ctl like">💗 마음에 들어요</button>
+    <button id="leaveBtn" class="ctl leave">나가기</button>
+  </div>
+  <button id="unmuteBtn" class="unmute hidden">🔈 상대 소리 켜기</button>
+  <audio id="remoteAudio" autoplay playsinline></audio>
+</section>
+
+<!-- MATCH -->
+<div id="match" class="overlay hidden">
+  <div class="match-card">
+    <div class="hearts">💞</div>
+    <h2>서로 마음에 들어요!</h2>
+    <p>실제로 만나볼까요?</p>
+    <button id="matchOk" class="primary">좋아요</button>
+    <button id="matchClose" class="ghost">대화 계속하기</button>
+  </div>
+</div>
+
+<div id="fullModal" class="overlay hidden">
+  <div class="match-card">
+    <div class="hearts">🙅</div>
+    <h2>테이블이 꽉 찼어요</h2>
+    <p>다른 테이블 번호를 골라주세요.</p>
+    <button id="fullOk" class="primary">확인</button>
+  </div>
+</div>
+
+<video id="cam" playsinline muted></video>
+<script type="module" src="app.js"></script>
+</body>
+</html>
