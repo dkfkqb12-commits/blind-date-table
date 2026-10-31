@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="theme-color" content="#ff7a9a">
 <title>블라인드 테이블 · 얼굴 없는 소개팅</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🫣</text></svg>">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -36,20 +37,17 @@
   </div>
 
   <div class="card">
-    <label class="lbl">내 캐릭터</label>
-    <div class="avatar-edit">
-      <canvas id="editPreview" width="220" height="220"></canvas>
-      <div class="opts">
-        <div id="styleOpts" class="chips"></div>
-        <div id="skinOpts" class="swatches"></div>
-        <div id="outfitOpts" class="swatches"></div>
-      </div>
-    </div>
+    <label class="lbl">내 캐릭터 <span class="hint">상대에게 이 모습으로 보여요</span></label>
+    <canvas id="editPreview" width="800" height="1040"></canvas>
+    <p class="frame-hint">📱 휴대폰을 조금 멀리 들고, 어깨와 양손이 화면에 들어오게 해주세요.</p>
+    <div id="lookOpts"></div>
   </div>
 
-  <button id="enterBtn" class="primary">카메라 켜고 입장하기</button>
-  <p class="privacy">🔒 카메라 영상은 이 폰 안에서만 쓰여요. 상대에게는 표정·고개 움직임 숫자만 전송되고, 목소리만 그대로 전달돼요.</p>
-  <p id="entryMsg" class="msg"></p>
+  <div class="enter-bar">
+    <button id="enterBtn" class="primary">카메라 켜고 입장하기</button>
+    <p class="privacy">🔒 카메라 영상은 이 폰 안에서만 쓰여요. 상대에게는 표정·고개·팔·손 움직임 숫자만 전송되고, 목소리만 그대로 전달돼요.</p>
+    <p id="entryMsg" class="msg"></p>
+  </div>
 </section>
 
 <!-- ROOM -->
@@ -59,11 +57,12 @@
     <div id="roomTitle" class="pill"></div>
     <div id="roomWhen" class="pill small"></div>
   </div>
+  <div id="frameHint" class="frame-banner">휴대폰을 조금 멀리 들어 어깨와 양손이 보이게 해주세요</div>
   <div id="partnerTag" class="partner-tag"></div>
   <div id="waiting" class="waiting">상대를 기다리는 중이에요…<br><small>같은 장소 · 같은 테이블 번호로 들어오면 연결돼요</small></div>
   <div class="selfbox">
-    <canvas id="selfPreview" width="240" height="240"></canvas>
-    <div id="trackState" class="track">얼굴 인식 준비 중</div>
+    <canvas id="selfPreview" width="300" height="390"></canvas>
+    <div id="trackState" class="track">얼굴·손 인식 준비 중</div>
   </div>
   <div id="peerLiked" class="toast"></div>
   <div class="controls">

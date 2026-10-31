@@ -12,9 +12,10 @@ cloudflared tunnel --url http://localhost:8080   # 폰 테스트용 HTTPS 주소
 
 ## 구조
 - `server.js` — Express 정적 서버 + WebSocket(`/ws`) 방 관리(장소:테이블당 최대 2명), 표정 데이터 중계, WebRTC 시그널링, 💗 매칭
-- `public/app.js` — 입장 화면, MediaPipe Face Landmarker(브라우저 내 얼굴 추적), 표정 숫자 전송(20fps), WebRTC 음성
-- `public/avatar.js` — 2D 캐릭터(동자승/단발/긴머리/고양이) 렌더링: 눈 깜빡임, 입 벌림, 미소, 눈썹, 시선, 고개 좌우·끄덕·기울기
+- `public/app.js` — 입장·커스터마이즈, MediaPipe 얼굴/자세/손 추적(브라우저 안, 약 15–20fps), 숫자만 전송, WebRTC 음성
+- `public/tracking.js` — Face / Pose / Hand 랜드마크를 팔 각도·손가락 굽힘으로 압축
+- `public/avatar.js` — 상반신 웹툰풍 캐릭터(헤어 9종, 옷 8종, 안경·귀걸이·모자)와 어깨·팔·손 리그
 - `public/venue.js` — 카페/식당/술집 배경과 테이블 번호
-- `test-ws.mjs`, `test/browser-test.mjs` — 서버/브라우저 자동 테스트
+- `test/pose-math.mjs`, `test/browser-test.mjs` — 자세 수학 / 헤드리스 크롬 스모크 테스트
 
-카메라 영상은 전송되지 않습니다. 오디오 트랙만 WebRTC로 보내고, 얼굴은 숫자 12개(표정·고개 각도)만 서버를 거쳐 상대에게 전달됩니다.
+카메라 영상은 전송되지 않습니다. 오디오 트랙만 WebRTC로 보내고, 표정·고개·어깨·팔·손목·손가락은 숫자 배열로만 상대에게 전달됩니다. 손이나 모델이 없으면 손은 테이블 위 기본 자세로 돌아갑니다.
