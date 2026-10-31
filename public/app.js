@@ -5,6 +5,7 @@ import {
 } from './avatar.js';
 import { VENUES, drawBackground, drawTable } from './venue.js';
 import { extractFace, extractPose, extractHands, fingersFromPose } from './tracking.js';
+import { initGate, api, authHeaders } from './gate.js';
 
 const MP_VER = '0.10.21';
 const MP_URL = `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MP_VER}`;
@@ -21,7 +22,8 @@ const S = window.__app = {
   self: { ...NEUTRAL }, selfShown: { ...NEUTRAL },
   partnerTarget: { ...NEUTRAL }, partnerShown: { ...NEUTRAL }, lastPartnerMotion: 0,
   tracking: false, faceAt: 0, poseAt: 0, handLAt: 0, handRAt: 0, lastFresh: 0,
-  liked: false, micOn: true, errors: [], modelNote: '',
+  liked: false, again: false, rated: false, micOn: true, errors: [], modelNote: '',
+  user: null, maxTable: 30, rateTarget: null,
   models: null,
   frames: 0,
   stats: { sent: 0, recv: 0, detections: 0 },
@@ -50,14 +52,22 @@ $('venues').addEventListener('click', (e) => {
   S.venue = el.dataset.v; renderVenues(); refreshOcc();
 });
 document.querySelectorAll('.step').forEach((b) => b.addEventListener('click', () => {
-  const t = $('table'); t.value = Math.min(20, Math.max(1, (+t.value || 1) + +b.dataset.d)); refreshOcc();
+  const t = $('table');
+  const max = S.maxTable || 30;
+  t.value = Math.min(max, Math.max(1, (+t.value || 1) + +b.dataset.d));
+  refreshOcc();
 }));
 $('table').addEventListener('input', refreshOcc);
 
 let occData = null;
 async function refreshOcc() {
-  try { if (!occData || Date.now() - occData.t > 3000) occData = { t: Date.now(), d: await (await fetch('/api/status')).json() }; } catch { return; }
-  const n = occData.d.occupancy[S.venue]?.[$('table').value] || 0;
+  try {
+    if (!occData || Date.now() - occData.t > 3000) {
+      occData = { t: Date.now(), d: await (await fetch('/api/status', { headers: authHeaders() })).json() };
+    }
+  } catch { return; }
+  if (occData.d.maxTable) { S.maxTable = occData.d.maxTable; $('table').max = S.maxTable; }
+  const n = occData.d.occupancy?.[S.venue]?.[$('table').value] || 0;
   $('occ').textContent = n === 0 ? '빈 테이블' : n === 1 ? '🙋 1명 기다리는 중' : '🚫 꽉 참';
 }
 
@@ -388,18 +398,24 @@ function connect(join) {
         case 'motion': S.partnerTarget = decode(m.data); S.lastPartnerMotion = performance.now(); S.stats.recv++; break;
         case 'peer-liked': toast('상대가 💗를 눌렀어요!'); break;
         case 'match': $('match').classList.remove('hidden'); break;
+        case 'chat': addChat(m); break;
+        case 'chat-blocked': addChat({ system: true, text: m.kind === 'locked' ? '서로 또 만나고 싶어요를 누른 뒤에 연락처를 보낼 수 있어요.' : '연락처·링크는 채팅으로 보낼 수 없어요. 서로 또 만나고 싶어요를 누르면 교환할 수 있어요.' }); break;
+        case 'peer-again': toast('상대도 또 만나고 싶어해요'); break;
+        case 'contact-open': $('contactBox').classList.remove('hidden'); toast('연락처를 교환할 수 있어요'); break;
+        case 'contact': addChat({ system: true, text: `${m.from}: ${m.text}` }); break;
       }
     };
     ws.onclose = () => { if (S.joined) { toast('서버 연결이 끊겼어요'); } resolve('closed'); };
   });
 }
 function setPeer(p) {
-  S.peer = p; S.liked = false;
+  S.peer = p; S.liked = false; S.again = false;
   $('likeBtn').classList.remove('done'); $('likeBtn').textContent = '💗 마음에 들어요';
+  $('againBtn').classList.remove('done');
   $('waiting').classList.toggle('hidden', !!p);
-  $('partnerTag').textContent = p ? p.nick : '';
+  $('partnerTag').textContent = p ? `${p.nick}${p.manner != null ? ` · ${Number(p.manner).toFixed(1)}°` : ''}` : '';
   S.partnerTarget = { ...NEUTRAL }; S.partnerShown = { ...NEUTRAL }; S.lastPartnerMotion = 0;
-  if (p) toast(`${p.nick}님이 앉았어요`);
+  if (p) { S.metPeer = p; S.rated = false; toast(`${p.nick}님이 앉았어요`); }
 }
 let toastT;
 function toast(text) { const t = $('peerLiked'); t.textContent = text; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2500); }
@@ -408,7 +424,8 @@ $('enterBtn').addEventListener('click', async () => {
   const nick = $('nick').value.trim();
   const table = parseInt($('table').value, 10);
   if (!nick) { $('entryMsg').textContent = '닉네임을 입력해주세요'; return; }
-  if (!(table >= 1 && table <= 20)) { $('entryMsg').textContent = '테이블 번호는 1~20 사이예요'; return; }
+  const max = S.maxTable || 30;
+  if (!(table >= 1 && table <= max)) { $('entryMsg').textContent = `테이블 번호는 1~${max} 사이예요`; return; }
   localStorage.setItem('nick', nick);
   localStorage.setItem('look', JSON.stringify(S.look));
   $('entryMsg').textContent = ''; $('enterBtn').disabled = true; $('enterBtn').textContent = '입장하는 중…';
@@ -416,7 +433,7 @@ $('enterBtn').addEventListener('click', async () => {
     const denied = await getMedia();
     if (denied.length) $('entryMsg').textContent = `${denied.join('·')} 권한이 없어요. 그래도 입장할게요.`;
   }
-  const r = await connect({ venue: S.venue, table, nick, avatar: S.look });
+  const r = await connect({ venue: S.venue, table, nick, avatar: S.look, token: localStorage.getItem('btToken') });
   $('enterBtn').disabled = false; $('enterBtn').textContent = '카메라 켜고 입장하기';
   if (r === 'full') { $('fullModal').classList.remove('hidden'); occData = null; refreshOcc(); return; }
   if (r !== 'ok') { $('entryMsg').textContent = typeof r === 'string' && r !== 'closed' ? r : '서버에 연결하지 못했어요'; return; }
@@ -426,7 +443,8 @@ $('fullOk').onclick = () => $('fullModal').classList.add('hidden');
 
 function enterRoom(table) {
   $('entry').classList.remove('active'); $('room').classList.add('active');
-  $('roomTitle').textContent = `${VENUES[S.venue].emoji} ${VENUES[S.venue].name} · ${table}번 테이블`;
+  const regionName = S.user?.region?.name ? `${S.user.region.name} · ` : '';
+  $('roomTitle').textContent = `${regionName}${VENUES[S.venue].emoji} ${VENUES[S.venue].name} · ${table}번 테이블`;
   const w = $('when').value;
   $('roomWhen').textContent = w ? `⏰ 약속 ${new Date(w).toLocaleString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short', hour: 'numeric', minute: '2-digit' })}` : '';
   S.table = table;
@@ -436,12 +454,18 @@ function enterRoom(table) {
   resize(); requestAnimationFrame(roomLoop);
 }
 
-$('leaveBtn').onclick = () => {
+function doLeave() {
   if (S.ws) { try { S.ws.send(JSON.stringify({ type: 'leave' })); } catch { /* socket already gone */ } S.joined = false; S.ws.close(); }
   closePC(); S.peer = null;
   $('match').classList.add('hidden');
+  $('contactBox').classList.add('hidden');
+  $('chatPanel').classList.add('hidden');
   $('room').classList.remove('active'); $('entry').classList.add('active');
   occData = null; refreshOcc(); requestAnimationFrame(editLoop);
+}
+$('leaveBtn').onclick = () => {
+  if (S.metPeer && !S.rated) { S.rateTarget = S.metPeer.userId; $('rateModal').classList.remove('hidden'); return; }
+  doLeave();
 };
 $('likeBtn').onclick = () => {
   if (!S.peer) { toast('아직 상대가 없어요'); return; }
@@ -449,6 +473,77 @@ $('likeBtn').onclick = () => {
   S.liked = true; S.ws.send(JSON.stringify({ type: 'like' }));
   $('likeBtn').classList.add('done'); $('likeBtn').textContent = '💗 보냈어요';
 };
+$('againBtn').onclick = () => {
+  if (!S.peer) { toast('아직 상대가 없어요'); return; }
+  if (S.again) return;
+  S.again = true;
+  S.ws.send(JSON.stringify({ type: 'again' }));
+  $('againBtn').classList.add('done');
+};
+function addChat(m) {
+  const log = $('chatLog');
+  const line = document.createElement('div');
+  if (m.system) line.className = 'sys';
+  line.textContent = m.system ? m.text : `${m.from}: ${m.text}`;
+  log.appendChild(line);
+  log.scrollTop = log.scrollHeight;
+  $('chatPanel').classList.remove('hidden');
+}
+$('chatToggle').onclick = () => $('chatPanel').classList.toggle('hidden');
+$('chatForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const text = $('chatInput').value.trim();
+  if (!text || !S.ws || S.ws.readyState !== 1) return;
+  S.ws.send(JSON.stringify({ type: 'chat', text }));
+  $('chatInput').value = '';
+});
+$('contactSend').onclick = () => {
+  const text = $('contactInput').value.trim();
+  if (!text || !S.ws || S.ws.readyState !== 1) return;
+  S.ws.send(JSON.stringify({ type: 'contact', text }));
+  $('contactInput').value = '';
+};
+$('reportBtn').onclick = () => {
+  if (!S.peer) { toast('신고할 상대가 아직 없어요'); return; }
+  $('reportModal').classList.remove('hidden');
+};
+$('reportClose').onclick = () => $('reportModal').classList.add('hidden');
+$('reportReasons').addEventListener('click', async (e) => {
+  const reason = e.target?.dataset?.reason;
+  if (!reason || !S.peer) return;
+  const result = await api('/api/report', { targetId: S.peer.userId, reason });
+  $('reportModal').classList.add('hidden');
+  toast(result.ok ? '신고를 접수했어요' : (result.error || '신고하지 못했어요'));
+});
+$('blockBtn').onclick = async () => {
+  if (!S.peer) return;
+  const result = await api('/api/block', { targetId: S.peer.userId });
+  $('reportModal').classList.add('hidden');
+  if (!result.ok) { toast(result.error || '차단하지 못했어요'); return; }
+  toast('차단했어요. 다시 같은 테이블에 앉지 않아요.');
+  doLeave();
+};
+$('rateModal').addEventListener('click', async (e) => {
+  const score = e.target?.dataset?.score;
+  if (e.target?.id === 'rateSkip') { $('rateModal').classList.add('hidden'); S.rated = true; doLeave(); return; }
+  if (!score) return;
+  if (S.rateTarget) await api('/api/rate', { targetId: S.rateTarget, score });
+  S.rated = true;
+  $('rateModal').classList.add('hidden');
+  doLeave();
+});
+function enterLobby(user) {
+  S.user = user;
+  if (user?.nick) { $('nick').value = user.nick; localStorage.setItem('nick', user.nick); }
+  $('regionPill').textContent = user?.region?.name ? `📍 ${user.region.name}` : '';
+  $('mannerPill').textContent = user ? `매너 ${Number(user.manner).toFixed(1)}°C` : '';
+  $('gate').classList.remove('active');
+  if (!$('room').classList.contains('active')) $('entry').classList.add('active');
+  occData = null;
+  refreshOcc();
+  requestAnimationFrame(editLoop);
+}
+initGate(enterLobby);
 $('micBtn').onclick = () => {
   S.micOn = !S.micOn;
   micStream?.getAudioTracks().forEach((tr) => { tr.enabled = S.micOn; });

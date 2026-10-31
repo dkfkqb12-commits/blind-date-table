@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>블라인드 테이블 관리</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main id="entry">
+  <header class="brand">
+    <h1>관리</h1>
+    <p>신고 목록과 이용 제한을 확인합니다.</p>
+  </header>
+  <div class="card" id="loginCard">
+    <label class="lbl">관리자 비밀번호</label>
+    <input id="pw" type="password" autocomplete="current-password">
+    <button id="loginBtn" class="primary" type="button" style="margin-top:12px">들어가기</button>
+    <p id="loginMsg" class="msg"></p>
+  </div>
+  <div id="dash" class="hidden">
+    <div class="card">
+      <h2>이용 제한</h2>
+      <div id="suspended"></div>
+    </div>
+    <div class="card">
+      <h2>신고</h2>
+      <div id="reports"></div>
+    </div>
+  </div>
+</main>
+<script>
+const reasonName = { sexual: '성희롱/음란', scam: '사기·홍보', minor: '미성년자 의심', abuse: '욕설', other: '기타' };
+const tokenKey = 'btAdmin';
+const $ = (id) => document.getElementById(id);
+async function api(path, body) {
+  const headers = { 'Content-Type': 'application/json' };
+  const token = sessionStorage.getItem(tokenKey);
+  if (token) headers.Authorization = 'Bearer ' + token;
+  const res = await fetch(path, { method: body ? 'POST' : 'GET', headers, body: body ? JSON.stringify(body) : undefined });
+  const data = await res.json().catch(() => ({}));
+  if (res.status === 401 && path !== '/api/admin/login') { sessionStorage.removeItem(tokenKey); location.reload(); }
+  return data;
+}
+function paint(data) {
+  $('loginCard').classList.add('hidden');
+  $('dash').classList.remove('hidden');
+  const sus = data.suspended || [];
+  $('suspended').innerHTML = sus.length ? sus.map((u) =>
+    `<div class="admin-row"><div><b>${u.nick || '(닉네임 없음)'}</b> · ${u.phoneMasked || ''} · ${u.manner}°C</div><button type="button" data-unsuspend="${u.id}">제한 해제</button></div>`
+  ).join('') : '<p class="hint">제한된 계정이 없어요.</p>';
+  const rows = data.reports || [];
+  $('reports').innerHTML = rows.length ? rows.slice().reverse().map((r) =>
+    `<div class="admin-row"><div><b>${reasonName[r.reason] || r.reason}</b> · ${r.reporterNick} → ${r.targetNick}${r.targetSuspended ? ' · 제한됨' : ''}<br><span class="hint">${r.detail || ''}</span></div></div>`
+  ).join('') : '<p class="hint">신고가 없어요.</p>';
+}
+async function load() {
+  const data = await api('/api/admin/reports');
+  if (data.reports) paint(data);
+}
+$('loginBtn').onclick = async () => {
+  const data = await api('/api/admin/login', { password: $('pw').value });
+  if (!data.token) { $('loginMsg').textContent = data.error || '들어갈 수 없어요'; return; }
+  sessionStorage.setItem(tokenKey, data.token);
+  load();
+};
+$('dash').addEventListener('click', async (e) => {
+  const id = e.target?.dataset?.unsuspend;
+  if (!id) return;
+  await api('/api/admin/unsuspend', { userId: id });
+  load();
+});
+if (sessionStorage.getItem(tokenKey)) load();
+</script>
+</body>
+</html>

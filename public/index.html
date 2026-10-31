@@ -9,11 +9,55 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<!-- ENTRY -->
-<section id="entry" class="screen active">
+<!-- GATE -->
+<section id="gate" class="screen active">
   <header class="brand">
     <div class="logo">🫣</div>
     <h1>블라인드 테이블</h1>
+    <p>만 19세만, 우리 동네 테이블에서 만나요.</p>
+  </header>
+  <div class="card">
+    <label class="lbl">닉네임</label>
+    <input id="gateNick" maxlength="12" placeholder="예: 커피좋아" autocomplete="nickname">
+    <label class="lbl">성별</label>
+    <div id="genderOpts" class="chips">
+      <button type="button" class="chip" data-g="female">여성</button>
+      <button type="button" class="chip" data-g="male">남성</button>
+      <button type="button" class="chip" data-g="other">기타</button>
+    </div>
+    <label class="lbl">태어난 해</label>
+    <input id="gateYear" inputmode="numeric" maxlength="4" placeholder="1998">
+  </div>
+  <div class="card test-card">
+    <div class="test-badge">테스트 인증</div>
+    <p class="test-copy">지금은 테스트 모드예요. 이름, 생년월일, 휴대폰 번호로 만 19세인지 확인합니다. 한 번호당 계정은 하나예요. <b>실제 PASS(휴대폰 본인인증)는 나중에 연결됩니다.</b></p>
+    <label class="lbl">이름</label>
+    <input id="vName" maxlength="20" placeholder="홍길동" autocomplete="name">
+    <label class="lbl">생년월일</label>
+    <input id="vBirth" type="date">
+    <label class="lbl">휴대폰 번호</label>
+    <input id="vPhone" inputmode="tel" maxlength="13" placeholder="010-0000-0000" autocomplete="tel">
+    <button id="verifyBtn" class="primary" type="button" style="margin-top:12px">테스트 인증하기</button>
+    <p id="verifyMsg" class="hint" style="margin-top:8px"></p>
+  </div>
+  <div class="card">
+    <label class="lbl">동네 인증</label>
+    <p class="test-copy">현재 위치로 시·구만 확인합니다. 정확한 좌표는 저장하지 않고, 30일 뒤 다시 인증해요.</p>
+    <button id="geoBtn" class="primary" type="button">현재 위치로 동네 인증</button>
+    <p id="regionResult" class="region-result"></p>
+  </div>
+  <button id="gateDone" class="primary" type="button" disabled>동네 테이블 보기</button>
+  <p id="gateMsg" class="msg"></p>
+  <p class="legal"><a href="/privacy">개인정보처리방침</a> · <a href="/terms">이용약관</a></p>
+</section>
+
+<!-- ENTRY -->
+<section id="entry" class="screen">
+  <header class="brand">
+    <div class="logo">🫣</div>
+    <h1>블라인드 테이블</h1>
+    <p id="regionPill" class="region-pill"></p>
+    <p id="mannerPill" class="manner-pill"></p>
     <p>얼굴은 비밀, 대화는 진짜.<br>약속한 장소와 테이블에서 캐릭터로 만나요.</p>
   </header>
 
@@ -27,7 +71,7 @@
     <label class="lbl">테이블 번호 <span class="hint">상대와 같은 번호로 맞춰주세요</span></label>
     <div class="row">
       <button class="step" data-d="-1" type="button">−</button>
-      <input id="table" type="number" inputmode="numeric" min="1" max="20" value="1">
+      <input id="table" type="number" inputmode="numeric" min="1" max="30" value="1">
       <button class="step" data-d="1" type="button">+</button>
       <span id="occ" class="occ"></span>
     </div>
@@ -46,6 +90,7 @@
   <div class="enter-bar">
     <button id="enterBtn" class="primary">카메라 켜고 입장하기</button>
     <p class="privacy">🔒 카메라 영상은 이 폰 안에서만 쓰여요. 상대에게는 표정·고개·팔·손 움직임 숫자만 전송되고, 목소리만 그대로 전달돼요.</p>
+    <p class="legal"><a href="/privacy">개인정보처리방침</a> · <a href="/terms">이용약관</a></p>
     <p id="entryMsg" class="msg"></p>
   </div>
 </section>
@@ -65,6 +110,26 @@
     <div id="trackState" class="track">얼굴·손 인식 준비 중</div>
   </div>
   <div id="peerLiked" class="toast"></div>
+  <div id="chatPanel" class="chat-panel hidden">
+    <div id="chatLog" class="chat-log"></div>
+    <form id="chatForm" class="chat-form">
+      <input id="chatInput" maxlength="200" placeholder="메시지" autocomplete="off">
+      <button type="submit">전송</button>
+    </form>
+  </div>
+  <div id="contactBox" class="contact-box hidden">
+    <p>서로 또 만나고 싶어해요. 연락처를 남겨 보세요.</p>
+    <div class="chat-form">
+      <input id="contactInput" maxlength="80" placeholder="카톡 아이디나 번호" autocomplete="off">
+      <button id="contactSend" type="button">보내기</button>
+    </div>
+    <div id="contactGot"></div>
+  </div>
+  <div class="subcontrols">
+    <button id="chatToggle" class="mini" type="button">채팅</button>
+    <button id="againBtn" class="mini" type="button">또 만나고 싶어요</button>
+    <button id="reportBtn" class="mini" type="button">신고</button>
+  </div>
   <div class="controls">
     <button id="micBtn" class="ctl" title="마이크">🎤</button>
     <button id="likeBtn" class="ctl like">💗 마음에 들어요</button>
@@ -82,6 +147,36 @@
     <p>실제로 만나볼까요?</p>
     <button id="matchOk" class="primary">좋아요</button>
     <button id="matchClose" class="ghost">대화 계속하기</button>
+  </div>
+</div>
+
+<div id="reportModal" class="overlay hidden">
+  <div class="match-card">
+    <h2>신고</h2>
+    <p>사유를 고르면 바로 접수돼요.</p>
+    <div id="reportReasons" class="report-list">
+      <button type="button" data-reason="sexual">성희롱/음란</button>
+      <button type="button" data-reason="scam">사기·홍보</button>
+      <button type="button" data-reason="minor">미성년자 의심</button>
+      <button type="button" data-reason="abuse">욕설</button>
+      <button type="button" data-reason="other">기타</button>
+    </div>
+    <button id="blockBtn" class="ghost" type="button">이 사람 차단</button>
+    <button id="reportClose" class="ghost" type="button">닫기</button>
+  </div>
+</div>
+
+<div id="rateModal" class="overlay hidden">
+  <div class="match-card">
+    <h2>오늘 만남은 어땠나요?</h2>
+    <p>매너 온도에 반영돼요. 시작은 36.5°C예요.</p>
+    <div class="report-list">
+      <button type="button" data-score="good">좋았어요</button>
+      <button type="button" data-score="ok">보통</button>
+      <button type="button" data-score="bad">별로</button>
+      <button type="button" data-score="noshow">노쇼</button>
+    </div>
+    <button id="rateSkip" class="ghost" type="button">나중에</button>
   </div>
 </div>
 

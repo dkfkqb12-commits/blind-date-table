@@ -44,7 +44,7 @@ input:focus{border-color:#ff7a9a}
 .pill{background:rgba(0,0,0,.5);color:#fff;padding:7px 12px;border-radius:20px;font-weight:700;font-size:14px;backdrop-filter:blur(6px)}
 .pill.small{font-size:12px;font-weight:500}
 .pill:empty{display:none}
-.frame-banner{position:absolute;left:50%;bottom:calc(env(safe-area-inset-bottom) + 74px);transform:translateX(-50%);width:min(92%,360px);text-align:center;color:#fff;background:rgba(0,0,0,.48);padding:8px 12px;border-radius:14px;font-size:12.5px;line-height:1.4;z-index:2}
+.frame-banner{position:absolute;left:50%;bottom:calc(env(safe-area-inset-bottom) + 156px);transform:translateX(-50%);width:min(92%,360px);text-align:center;color:#fff;background:rgba(0,0,0,.48);padding:8px 12px;border-radius:14px;font-size:12.5px;line-height:1.4;z-index:2}
 .partner-tag{position:absolute;left:50%;top:calc(env(safe-area-inset-top) + 52px);transform:translateX(-50%);background:rgba(255,255,255,.92);padding:5px 12px;border-radius:14px;font-weight:700;font-size:14px;white-space:nowrap;z-index:2}
 .partner-tag:empty{display:none}
 .waiting{position:absolute;left:50%;top:34%;transform:translate(-50%,-50%);color:#fff;text-align:center;background:rgba(0,0,0,.45);padding:14px 18px;border-radius:16px;font-weight:700;width:min(86%,360px);line-height:1.5}
@@ -69,3 +69,26 @@ input:focus{border-color:#ff7a9a}
 .match-card p{color:#7a6470;margin:0 0 18px}
 @keyframes pop{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
 #cam{position:fixed;width:2px;height:2px;opacity:0;pointer-events:none;left:0;top:0}
+.test-badge{display:inline-block;background:#fff0c9;color:#8a5a00;font-weight:800;font-size:12px;border-radius:999px;padding:4px 8px}
+.test-copy{font-size:13px;color:#6d5a64;line-height:1.5;margin:8px 0}
+.test-card{border:1.5px dashed #e0b15a}
+.region-pill,.manner-pill{display:inline-block;margin:4px 4px 0;background:#fff;border-radius:999px;padding:4px 10px;font-size:13px;font-weight:800;color:#e0567a}
+.region-result{font-weight:800;color:#e0567a;min-height:1.2em}
+.legal{text-align:center;font-size:12px;color:#8f7c86}
+.legal a{color:#c45c74}
+.legal-copy h2{font-size:16px;margin:16px 0 6px}
+.legal-copy p,.legal-copy li{font-size:14px;line-height:1.55;color:#4c3d46}
+.subcontrols{position:absolute;left:10px;right:10px;bottom:calc(env(safe-area-inset-bottom) + 68px);display:flex;gap:6px;z-index:3}
+.mini{border:none;border-radius:14px;padding:7px 10px;font-size:12px;font-weight:800;background:rgba(255,255,255,.92)}
+.mini.done{background:#ffd1dc;color:#c23a63}
+.chat-panel,.contact-box{position:absolute;left:10px;right:10px;bottom:calc(env(safe-area-inset-bottom) + 108px);z-index:4;background:rgba(20,12,16,.72);color:#fff;border-radius:16px;padding:8px;max-width:420px}
+.chat-log{max-height:96px;overflow:auto;font-size:13px;line-height:1.4}
+.chat-log .sys{color:#ffd0dc}
+.chat-form{display:flex;gap:6px;margin-top:6px}
+.chat-form input{flex:1;padding:8px 10px}
+.chat-form button{border:none;border-radius:12px;padding:8px 12px;font-weight:800;background:#ff7a9a;color:#fff}
+.contact-box p{margin:0 0 6px;font-size:13px;font-weight:700}
+.report-list{display:flex;flex-direction:column;gap:8px}
+.report-list button{border:1.5px solid #f0d9de;background:#fff;border-radius:12px;padding:12px;font-weight:800}
+.admin-row{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid #f3e3e8;font-size:14px}
+.admin-row button{border:none;border-radius:10px;padding:8px 10px;background:#ffe3ea;font-weight:800;color:#c23a63}

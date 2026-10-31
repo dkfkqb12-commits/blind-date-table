@@ -142,6 +142,33 @@ if (process.env.GALLERY_ONLY) {
   process.exit(failed ? 1 : 0);
 }
 
+const context = browser.defaultBrowserContext();
+await context.overridePermissions(BASE, ['geolocation']);
+await page.setGeolocation({ latitude: 37.5172, longitude: 127.0473 });
+const phoneA = `010${String(Date.now()).slice(-8)}`;
+await page.evaluate((phone) => {
+  document.getElementById('gateNick').value = '하늘';
+  document.getElementById('gateYear').value = '1995';
+  document.querySelector('#genderOpts [data-g="female"]').click();
+  document.getElementById('vName').value = '김하늘';
+  document.getElementById('vBirth').value = '1995-04-12';
+  document.getElementById('vPhone').value = phone;
+}, phoneA);
+await page.$eval('#gate', (el) => el.scrollTo?.(0, 0));
+await shot(page, 'onboarding');
+await page.click('#verifyBtn');
+await page.waitForFunction(() => document.getElementById('verifyMsg').textContent.includes('완료'), { timeout: 8000 });
+await page.$eval('#verifyMsg', (el) => el.scrollIntoView({ block: 'center' }));
+await shot(page, 'verification');
+await page.$eval('#geoBtn', (el) => el.click());
+await page.waitForFunction(() => document.getElementById('regionResult').textContent.includes('강남'), { timeout: 8000 });
+await page.$eval('#regionResult', (el) => el.scrollIntoView({ block: 'center' }));
+await shot(page, 'region-verified');
+await page.$eval('#gateDone', (el) => el.click());
+await page.waitForSelector('#entry.active', { timeout: 8000 });
+await page.evaluate(() => window.scrollTo(0, 0));
+await shot(page, 'region-lobby');
+
 // Entry / customization
 assert(await page.$('#lookOpts button[data-v="twoblock"]'), 'two-block hairstyle is offered');
 assert(await page.$('#lookOpts button[data-v="leather"]'), 'leather jacket is offered');
@@ -161,15 +188,30 @@ await shot(page, 'entry-custom');
 await shot(page, 'entry', { fullPage: true });
 
 const table = 7;
-await page.type('#nick', '하늘');
+await page.$eval('#nick', (el) => { el.value = '하늘'; });
 await page.$eval('#table', (el, n) => { el.value = String(n); el.dispatchEvent(new Event('input', { bubbles: true })); }, table);
 await page.click('#enterBtn');
 await page.waitForSelector('#room.active', { timeout: 15000 });
 
+async function seedUser(nick, phone) {
+  const headers = { 'Content-Type': 'application/json' };
+  const session = await fetch(`${BASE}/api/session`, { method: 'POST', headers, body: '{}' }).then((r) => r.json());
+  headers.Authorization = `Bearer ${session.token}`;
+  const post = (path, body) => fetch(`${BASE}${path}`, { method: 'POST', headers, body: JSON.stringify(body) }).then((r) => r.json());
+  const profile = await post('/api/profile', { nick, gender: 'male', birthYear: 1994 });
+  const verified = await post('/api/verify/test', { name: nick, birthdate: '1994-03-03', phone });
+  const region = await post('/api/region', { lat: 37.5172, lng: 127.0473 });
+  if (!profile.user || !verified.user || !region.region) throw new Error(`seed failed ${JSON.stringify({ profile, verified, region })}`);
+  return session.token;
+}
+const tokenB = await seedUser('바다', `010${String(Date.now() + 17).slice(-8)}`);
 const pageB = await browser.newPage();
 watch(pageB, 'B');
+await pageB.setGeolocation({ latitude: 37.5172, longitude: 127.0473 });
 await pageB.goto(BASE, { waitUntil: 'domcontentloaded' });
-await pageB.waitForSelector('#enterBtn');
+await pageB.evaluate((token) => localStorage.setItem('btToken', token), tokenB);
+await pageB.reload({ waitUntil: 'domcontentloaded' });
+await pageB.waitForSelector('#entry.active', { timeout: 8000 });
 await pageB.evaluate((n) => {
   const app = window.__app;
   app.look = { ...app.look, hair: 'twoblock', hairColor: '#1b1918', outfit: 'leather', outfitColor: '#1c1c1f', glasses: 'square', skin: '#c68655', earrings: 'stud', hat: 'none', eye: 'sharp', brow: 'straight' };
@@ -208,6 +250,10 @@ console.log('models', modelState);
 
 await page.evaluate(() => document.getElementById('peerLiked').classList.remove('show'));
 await pageB.evaluate(() => document.getElementById('peerLiked').classList.remove('show'));
+await page.$eval('#reportBtn', (el) => el.click());
+await page.waitForSelector('#reportModal:not(.hidden)', { timeout: 5000 });
+await shot(page, 'report');
+await page.$eval('#reportClose', (el) => el.click());
 await shot(page, 'room-rest');
 await shot(pageB, 'room-rest-b');
 
